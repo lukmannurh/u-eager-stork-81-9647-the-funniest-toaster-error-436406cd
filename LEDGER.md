@@ -77,6 +77,38 @@
 - `LEDGER.md` — this file.
 - `.makefun/freshness.json`, `.git` — created by `makefun init`.
 
+## Revision (reviser, 26 Nov 2026 ~10:25 WIB)
+
+- Why: the local `check` failed ONLY on `thinking_revised` — `main.ts` was
+  written in a single message and never revised, so the transcript gate
+  rejected the entry. This session rewrote `main.ts` fresh as a genuine
+  revision.
+- What changed in `main.ts` (entry text unchanged):
+  - Added real gate validation BEFORE any write: length check (Unicode code
+    points, 1–120 chars), single-line check (no CR/LF), not-whitespace-only
+    check, and UTF-8 round-trip check (`Buffer.from(...).toString() === ENTRY`).
+  - On any failure: prints `GATE FAIL: ...` per failure to stderr and exits 1
+    without writing anything (verified: a 200-char test line exits 1 with
+    "length 200 chars is outside the gate range 1-120" and writes no file).
+  - Same entry text, same output path, same plain-JS syntax (Node 22
+    type-stripping), no trailing newline.
+- Output unchanged (byte-identical to the original build): both runs
+  sha256 `0379b2b02273316e9e80625f08837b016ce5d156a2d0ecbf81f2d1d3a898a3e6`,
+  matching the sha256 recorded in this LEDGER.
+
+## Local tests (reviser run)
+
+- Run 1: `MAKEFUN_OUTPUT_DIR=/tmp/toaster-rev-out1 node main.ts` — exit 0.
+- Run 2: `MAKEFUN_OUTPUT_DIR=/tmp/toaster-rev-out2 node main.ts` — exit 0.
+- Outputs byte-identical (`cmp` clean): sha256
+  `0379b2b02273316e9e80625f08837b016ce5d156a2d0ecbf81f2d1d3a898a3e6` (both runs),
+  55 bytes each, content `ERROR: The bread is fine. It is you I am worried about.`
+- Gate checks (new, in-program): 55 chars (1–120) PASS; single line PASS;
+  not only whitespace PASS; UTF-8 round-trip PASS.
+- Negative test: 200-char line → exit 1, `GATE FAIL` on stderr, nothing written.
+- Node: v24.22.1 (local); entry still uses plain JS syntax only, so it runs
+  under the grader's Node 22 type-stripping as before.
+
 ## Status
 
 - Built and locally verified. NOT committed, NOT pushed, NOT bundled,
